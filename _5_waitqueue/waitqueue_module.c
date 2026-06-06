@@ -5,7 +5,7 @@
 #include <linux/wait.h>
 #include <linux/kthread.h>
 #include <linux/sched.h>
-
+#include <linux/mutex.h> /* To lock the condition flag */
 #include "./waitqueue_module.h"
 
 /* // Unused header files --
@@ -48,6 +48,9 @@ DECLARE_WAIT_QUEUE_HEAD(waitq);
 
 static int waiting_thread(void *unused_args);
 
+/* -------------------Create a Mutex -------------------*/
+static DEFINE_MUTEX(param_lock);
+
 /*------------------- Functions Implementation -------------------*/
 
 static int  __init module_init_func(void) {
@@ -65,7 +68,11 @@ static int  __init module_init_func(void) {
     return retval;
 }
 static void __exit module_exit_func(void) {
+    /* Protect the global variable(s) using the muxtex lock */
+    mutex_lock(&param_lock);
     condition_flag = 2;
+    /* Release the mutex lock*/
+    mutex_unlock(&param_lock);
     wake_up_interruptible(&waitq);
     kthread_stop(wait_thread);
     printk("Module removed successfully\n");
@@ -77,27 +84,32 @@ static int callback_uint_param_set(const char *val, const struct kernel_param *k
     uint32_t tmp_val = 0;
     static uint32_t old_val = 0;
 
-    /* // Unsafe if strings like "125\n" or "abc" are ppointed to by val
+    /* // Unsafe if strings like "125\n" or "abc" are pointed to by val
        // by echo: echo "5" >
     memcpy(tmp_buf, val, 10);
     tmp_buf[10] = '\0';
     retval = sscanf(val,"%u",(uint32_t *)(kp->arg));
     */
-    retval = kstrtouint(val, 0, &tmp_val);
-    if(retval < 0){
+    if( (retval = kstrtouint(val, 0, &tmp_val)) < 0){
         printk(KERN_ERR "callback_uint_param_setter: Invalid 32 bit unsigned int val %s\n",val);
         goto ret;
     }
+
+    printk("New \"callback_uint_param\" value = %u\n", tmp_val);
+    /* Protect the global variables using the muxtex lock */
+    mutex_lock(&param_lock);
 
     *((uint32_t *)(kp->arg)) = tmp_val;
     /*Conditionally wake the kernel thread up from the wait queue.
       Condition: A falling edge detected on bit 0*/
     if( ((tmp_val&0x01) == 0) && (old_val&0x01)){
+        condition_flag = 1;
         wake_up_interruptible(&waitq);
-        pr_info("waiting_thread: A rising edge detected on bit 0\n");
+        /* pr_info("waiting_thread: A falling edge detected on bit 0\n"); */
     }
     old_val = tmp_val;
-    printk("New \"callback_uint_param\" value = %u", tmp_val);
+    /* Release the mutex lock*/
+    mutex_unlock(&param_lock);
 ret:
     return retval;
 }
@@ -123,7 +135,11 @@ static int waiting_thread(void *unused_args){
                 break;
         }
         if( rmmod_flag ) break; /*From while(1)*/
-        condition_flag = 1;
+        /* Protect the global variable(s) using the muxtex lock */
+        mutex_lock(&param_lock);
+        condition_flag = 0;
+        /* Release the mutex lock*/
+        mutex_unlock(&param_lock);
     }
     //do_exit(0);
     return 0;
