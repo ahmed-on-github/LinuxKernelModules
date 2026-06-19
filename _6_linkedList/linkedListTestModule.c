@@ -73,7 +73,7 @@ static int  __init module_init_func(void){
 
 
     printk("Deleting node after head\n");
-    list_del(int_list_head); /*delete after head */
+    list_del(int_list_head->next); /*delete after head */
     list_for_each(ptr, int_list_head){ /* Head (5 -- not printed) -> 4 -> 7 */
         printk("ptr->int_data = %d\n", container_of(ptr,int_list_t,node)->int_data);
     }
