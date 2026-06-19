@@ -99,7 +99,7 @@ static int  __init module_init_func(void){
 
     printk("Replacing list tail  with list_node_arr[3]\n");
     list_replace(int_list_head->prev, &(list_node_arr[3].node));
-    list_for_each(ptr, int_list_head){ /* Head (5 -- not printed) -> 7 -> 2 */
+    list_for_each(ptr, int_list_head){ /* Head (5 -- not printed) -> 7 -> 4 */
         printk("ptr->int_data = %d\n", container_of(ptr,int_list_t,node)->int_data);
     }
 
