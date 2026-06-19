@@ -84,14 +84,31 @@ static int  __init module_init_func(void){
         printk("ptr->int_data = %d\n", container_of(ptr,int_list_t,node)->int_data);
     }
 
+    list_node_arr[1].int_data = 2;
+    printk("Inserting %d after head\n", list_node_arr[1].int_data);
+    list_add(&(list_node_arr[1].node), int_list_head); /*Insert after head*/
+    list_for_each(ptr, int_list_head){ /* Head (5 -- not printed) -> 2 -> 7  */
+        printk("ptr->int_data = %d\n", container_of(ptr,int_list_t,node)->int_data);
+    }
+
+    printk("Swapping list head previous and next\n");
+    list_swap(int_list_head->prev, int_list_head->next );
+    list_for_each(ptr, int_list_head){ /* Head (5 -- not printed) -> 7 -> 2 */
+        printk("ptr->int_data = %d\n", container_of(ptr,int_list_t,node)->int_data);
+    }
+
+    printk("Replacing list tail  with list_node_arr[3]\n");
+    list_replace(int_list_head->prev, &(list_node_arr[3].node));
+    list_for_each(ptr, int_list_head){ /* Head (5 -- not printed) -> 7 -> 2 */
+        printk("ptr->int_data = %d\n", container_of(ptr,int_list_t,node)->int_data);
+    }
+
     printk("Module \"%s\" inserted\n", MODULE_NAME);
     return 0;
 }
 static void __exit module_exit_func(void){
     printk("Module \"%s\" removed\n", MODULE_NAME);
 }
-
-
 
 
 module_init(module_init_func);
