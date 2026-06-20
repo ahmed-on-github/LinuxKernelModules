@@ -103,6 +103,25 @@ static int  __init module_init_func(void){
         printk("ptr->int_data = %d\n", container_of(ptr,int_list_t,node)->int_data);
     }
 
+    list_node_arr[4].int_data = 8;
+    list_add(&(list_node_arr[4].node), int_list_head->next); /*Insert after 1st node*/ /* Head (5 -- not printed) -> 7 -> 2 -> 4 */
+
+    /* Testing functions */
+    list_for_each(ptr, int_list_head){
+        if( list_is_first(ptr, int_list_head)  ){
+            printk("%p is 1st node, with data = %d\n", ptr, container_of(ptr,int_list_t,node)->int_data);
+        }
+        else if( list_is_last(ptr, int_list_head) ){
+            printk("%p is last node, with data = %d\n", ptr, container_of(ptr,int_list_t,node)->int_data);
+        }
+        else{
+            printk("%p is middle node, with data = %d\n", ptr, container_of(ptr,int_list_t,node)->int_data);
+        }
+    }
+    printk("list_is_head(int_list_head) = %d, list_is_head(int_list_head->prev) = %d\n",
+        list_is_head(int_list_head,int_list_head), list_is_head(int_list_head->prev, int_list_head)
+    );
+
     printk("Module \"%s\" inserted\n", MODULE_NAME);
     return 0;
 }
